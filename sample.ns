@@ -1,0 +1,8 @@
+function hello (name) {
+    "Hello, " + name + "!"
+};
+
+let members = ["Alice", "Bob"];
+for message in map(members, hello) {
+    print message;
+};
