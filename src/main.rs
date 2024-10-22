@@ -156,6 +156,8 @@ fn builtin_function() -> HashMap<String, Type> {
             "exit".to_string(),
             Type::Function(Function::BuiltIn(|_, _| exit(0))),
         ),
+        ("new-line".to_string(), Type::String("\n".to_string())),
+        ("double-quote".to_string(), Type::String("\"".to_string())),
     ])
 }
 
@@ -178,7 +180,7 @@ fn parse_program(source: String, scope: &mut HashMap<String, Type>) -> Option<Bl
         let code = code.trim().to_string();
         if code.starts_with("if") {
             let tokens = tokenize_expr(code["if".len()..].trim().to_string())?;
-            if tokens.get(2)?.trim() == "else" {
+            if tokens.get(2).unwrap_or(&"".to_string()).trim() == "else" {
                 program.push(Statement::If(
                     parse_expr(tokens.get(0)?.to_owned(), scope)?,
                     parse_program(
