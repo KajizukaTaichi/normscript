@@ -1,22 +1,40 @@
+use clap::Parser;
 use rustyline::DefaultEditor;
-use std::{collections::HashMap, process::exit};
+use std::{collections::HashMap, fs::read_to_string, process::exit};
+
+#[derive(Parser, Debug)]
+#[command(name = "Pravda", version = "0.1.0")]
+struct Cli {
+    /// Script file to be running
+    #[arg(index = 1)]
+    file: Option<String>,
+}
 
 fn main() {
+    let cli = Cli::parse();
     let mut scope: HashMap<String, Type> = builtin_function();
 
-    println!("NormScript");
-    let mut rl = DefaultEditor::new().unwrap();
+    if let Some(path) = cli.file {
+        if let Ok(code) = read_to_string(path) {
+            run_program(code, &mut scope);
+        } else {
+            eprintln!("Error! opening file is fault");
+        }
+    } else {
+        println!("NormScript");
+        let mut rl = DefaultEditor::new().unwrap();
 
-    loop {
-        if let Ok(code) = rl.readline("> ") {
-            let code = code.trim().to_string();
-            if code.is_empty() {
-                continue;
-            }
+        loop {
+            if let Ok(code) = rl.readline("> ") {
+                let code = code.trim().to_string();
+                if code.is_empty() {
+                    continue;
+                }
 
-            rl.add_history_entry(&code).unwrap_or_default();
-            if let Some(ast) = run_program(code, &mut scope) {
-                println!("{}", ast.display(&mut scope));
+                rl.add_history_entry(&code).unwrap_or_default();
+                if let Some(ast) = run_program(code, &mut scope) {
+                    println!("{}", ast.display(&mut scope));
+                }
             }
         }
     }
