@@ -3,7 +3,7 @@ use rustyline::DefaultEditor;
 use std::{collections::HashMap, fs::read_to_string, process::exit};
 
 #[derive(Parser, Debug)]
-#[command(name = "Pravda", version = "0.1.0")]
+#[command(name = "NormScript", version = "0.1.0")]
 struct Cli {
     /// Script file to be running
     #[arg(index = 1)]
