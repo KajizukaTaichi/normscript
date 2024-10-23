@@ -43,6 +43,38 @@ fn main() {
 fn builtin_function() -> HashMap<String, Type> {
     HashMap::from([
         (
+            "type".to_string(),
+            Type::Function(Function::BuiltIn(|args, scope| {
+                Some(Type::String(
+                    match args.get(0)?.eval(scope)? {
+                        Type::Null => "null",
+                        Type::Number(_) => "number",
+                        Type::String(_) => "string",
+                        Type::Bool(_) => "bool",
+                        Type::Array(_) => "array",
+                        Type::Symbol(_) => "symbol",
+                        Type::Function(_) => "function",
+                    }
+                    .to_string(),
+                ))
+            })),
+        ),
+        (
+            "cast".to_string(),
+            Type::Function(Function::BuiltIn(|args, scope| {
+                let value = args.get(0)?.eval(scope)?;
+                Some(match args.get(1)?.eval(scope)?.get_string().as_str() {
+                    "number" => Type::Number(value.get_number()),
+                    "string" => Type::String(value.get_string()),
+                    "bool" => Type::Bool(value.get_bool()),
+                    "array" => Type::Array(value.get_array()),
+                    "symbol" => Type::Symbol(value.display(scope)),
+                    "function" => Type::Function(value.get_function()),
+                    _ => value,
+                })
+            })),
+        ),
+        (
             "max".to_string(),
             Type::Function(Function::BuiltIn(|args, scope| {
                 args.get(0)?
