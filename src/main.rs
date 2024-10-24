@@ -476,7 +476,7 @@ fn parse_expr(soruce: String, scope: &mut HashMap<String, Type>) -> Option<Expr>
             if let Type::Function(f) = parse_expr(func.to_string(), scope)?.eval(scope)? {
                 f
             } else {
-                return None;
+                Function::Future(func.to_string())
             },
             tokenize_args(args.to_string())?
                 .iter()
@@ -848,6 +848,7 @@ impl Type {
             Type::Function(Function::UserDefined(args, _)) => {
                 format!("function({})", args.join(", "))
             }
+            Type::Function(Function::Future(name)) => format!("function({name})"),
             Type::Object(obj) => format!(
                 "object{{ {} }}",
                 obj.iter()
@@ -873,6 +874,7 @@ enum Expr {
 enum Function {
     BuiltIn(fn(Vec<Expr>, &mut HashMap<String, Type>) -> Option<Type>),
     UserDefined(Vec<String>, Block),
+    Future(String),
 }
 
 impl Expr {
@@ -892,6 +894,9 @@ impl Expr {
                 }
             }
             Expr::Function(Function::BuiltIn(func), args) => func(args.to_owned(), scope)?,
+            Expr::Function(Function::Future(name), args) => {
+                Expr::Function(scope.get(name)?.get_function(), args.to_vec()).eval(scope)?
+            }
             Expr::Function(Function::UserDefined(params, code), args) => {
                 let mut scope = scope.clone();
                 for (k, v) in params.iter().zip(args) {
