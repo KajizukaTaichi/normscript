@@ -12,7 +12,7 @@ function prime (n) {
     };
 
     filter(nums, function(n){ !(n == false) })
-}
+};
 
 print "Prime Apps" + new-line;
 let n = cast(input("> "), "number");
