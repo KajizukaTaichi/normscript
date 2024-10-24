@@ -223,6 +223,10 @@ fn builtin_function() -> HashMap<String, Type> {
             "exit".to_string(),
             Type::Function(Function::BuiltIn(|_, _| exit(0))),
         ),
+        (
+            "carriage-return".to_string(),
+            Type::String("\r".to_string()),
+        ),
         ("new-line".to_string(), Type::String("\n".to_string())),
         ("double-quote".to_string(), Type::String("\"".to_string())),
     ])
@@ -665,7 +669,7 @@ impl Statement {
             Statement::Expr(expr) => result = expr.eval(scope)?,
             Statement::Print(expr) => {
                 result = expr.eval(scope)?;
-                println!("{}", result.get_string());
+                print!("{}", result.get_string());
             }
             Statement::Let(name, expr) => {
                 result = run_block(expr.clone(), scope)?;
