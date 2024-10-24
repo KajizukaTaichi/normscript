@@ -382,6 +382,8 @@ fn parse_expr(soruce: String, scope: &mut HashMap<String, Type>) -> Option<Expr>
     let left = tokens.last()?.trim().to_string();
     let left = if let Ok(n) = left.parse::<f64>() {
         Expr::Value(Type::Number(n))
+    } else if let Ok(b) = left.parse::<bool>() {
+        Expr::Value(Type::Bool(b))
     } else if left.starts_with("!") {
         let mut left = left.clone();
         left.remove(0);
