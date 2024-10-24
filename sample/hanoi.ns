@@ -1,0 +1,13 @@
+function hanoi (n, from, to, via) {
+    if (n > 1) {
+        hanoi(n - 1, from, via, to);
+        print from + " -> " + to + new-line;
+        hanoi(n - 1, via, to, from)
+    } else {
+        print from + " -> " + to + new-line
+    }
+};
+
+print "Hanoi tower" + new-line;
+let n = cast(input("> "), "number");
+hanoi(n, "a", "b", "c")
