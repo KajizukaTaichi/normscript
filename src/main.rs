@@ -336,7 +336,10 @@ fn parse_program(source: String, scope: &mut HashMap<String, Type>) -> Option<Bl
             let name = tokens.get(0)?.trim().to_string();
 
             let code = tokens.get(1)?;
-            let args = tokenize_args(code[code.find("(")? + 1..code.rfind(")")?].to_string())?;
+            let args = tokenize_args(code[code.find("(")? + 1..code.rfind(")")?].to_string())?
+                .iter()
+                .map(|i| i.trim().to_string())
+                .collect();
 
             let code = tokens.get(2)?;
             let code = parse_program(
