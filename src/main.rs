@@ -54,6 +54,7 @@ fn builtin_function() -> HashMap<String, Type> {
                         Type::Array(_) => "array",
                         Type::Symbol(_) => "symbol",
                         Type::Function(_) => "function",
+                        Type::Object(_) => "object",
                     }
                     .to_string(),
                 ))
@@ -365,6 +366,25 @@ fn parse_expr(soruce: String, scope: &mut HashMap<String, Type>) -> Option<Expr>
             args,
             parse_program(splited.1.to_string(), scope)?,
         )))
+    } else if left.starts_with("object{") && left.ends_with('}') {
+        let left = {
+            let mut left = left.clone();
+            left = left.replacen("object{", "", 1);
+            left.remove(left.len() - 1);
+            left
+        };
+        let properties = tokenize_args(left)?;
+        let mut object = HashMap::new();
+
+        for i in properties {
+            let (name, value) = i.split_once(":")?;
+            object.insert(
+                name.trim().to_string(),
+                parse_expr(value.to_string(), scope)?,
+            );
+        }
+
+        Expr::Value(Type::Object(object))
     } else if left.starts_with('[') && left.ends_with(']') {
         let left = {
             let mut left = left.clone();
@@ -658,6 +678,7 @@ enum Type {
     Array(Vec<Expr>),
     Function(Function),
     Symbol(String),
+    Object(HashMap<String, Expr>),
     Null,
 }
 
@@ -728,6 +749,7 @@ impl Type {
             Type::Function(Function::UserDefined(args, _)) => {
                 format!("function({})", args.join(", "))
             }
+            Type::Object(obj) => format!("object{{ {:?} }}", obj),
         }
     }
 }
@@ -772,14 +794,17 @@ impl Expr {
                 }
                 run_block(code.clone(), &mut scope)?
             }
-            Expr::Access(target, index) => target
-                .eval(scope)?
-                .get_array()
-                .iter()
-                .map(|x| x.eval(scope).unwrap())
-                .collect::<Vec<Type>>()
-                .get(index.eval(scope)?.get_number() as usize)?
-                .clone(),
+            Expr::Access(target, index) => {
+                if let Type::Array(array) = target.eval(scope)? {
+                    array
+                        .get(index.eval(scope)?.get_number() as usize)?
+                        .eval(scope)?
+                } else if let Type::Object(obj) = target.eval(scope)? {
+                    obj.get(&index.eval(scope)?.get_string())?.eval(scope)?
+                } else {
+                    target.eval(scope)?
+                }
+            }
         })
     }
 }
