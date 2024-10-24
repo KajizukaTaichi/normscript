@@ -1,6 +1,11 @@
 use clap::Parser;
 use rustyline::DefaultEditor;
-use std::{collections::HashMap, fs::read_to_string, process::exit};
+use std::{
+    collections::HashMap,
+    fs::read_to_string,
+    io::{self, Write},
+    process::exit,
+};
 
 #[derive(Parser, Debug)]
 #[command(name = "NormScript", version = "0.1.0")]
@@ -216,6 +221,17 @@ fn builtin_function() -> HashMap<String, Type> {
                         .map(|x| x.eval(scope).unwrap().get_string())
                         .collect::<Vec<String>>()
                         .join(&args.get(1)?.eval(scope)?.get_string()),
+                ))
+            })),
+        ),
+        (
+            "input".to_string(),
+            Type::Function(Function::BuiltIn(|args, scope| {
+                Some(Type::String(
+                    DefaultEditor::new()
+                        .unwrap()
+                        .readline(&args.get(0)?.eval(scope)?.get_string())
+                        .unwrap_or_default(),
                 ))
             })),
         ),
@@ -670,6 +686,7 @@ impl Statement {
             Statement::Print(expr) => {
                 result = expr.eval(scope)?;
                 print!("{}", result.get_string());
+                io::stdout().flush().unwrap_or_default();
             }
             Statement::Let(name, expr) => {
                 result = run_block(expr.clone(), scope)?;
