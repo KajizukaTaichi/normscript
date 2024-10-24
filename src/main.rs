@@ -894,9 +894,9 @@ impl Expr {
             Expr::Function(Function::BuiltIn(func), args) => func(args.to_owned(), scope)?,
             Expr::Function(Function::UserDefined(params, code), args) => {
                 let mut scope = scope.clone();
-                for i in params.iter().zip(args) {
-                    let value = i.1.eval(&mut scope)?;
-                    scope.insert(i.0.to_string(), value);
+                for (k, v) in params.iter().zip(args) {
+                    let value = v.eval(&mut scope)?;
+                    scope.insert(k.to_string(), value);
                 }
                 run_block(code.clone(), &mut scope)?
             }
