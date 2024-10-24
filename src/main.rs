@@ -749,7 +749,13 @@ impl Type {
             Type::Function(Function::UserDefined(args, _)) => {
                 format!("function({})", args.join(", "))
             }
-            Type::Object(obj) => format!("object{{ {:?} }}", obj),
+            Type::Object(obj) => format!(
+                "object{{ {} }}",
+                obj.iter()
+                    .map(|(k, v)| { format!("{k}: {}", v.eval(scope).unwrap().display(scope)) })
+                    .collect::<Vec<String>>()
+                    .join(", ")
+            ),
         }
     }
 }
