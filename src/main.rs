@@ -76,6 +76,22 @@ fn builtin_function() -> HashMap<String, Type> {
             })),
         ),
         (
+            "sum".to_string(),
+            Type::Function(Function::BuiltIn(|args, scope| {
+                args.get(0)?
+                    .eval(scope)?
+                    .get_array()
+                    .iter()
+                    .cloned()
+                    .reduce(|a, c| {
+                        let a = a.eval(scope).unwrap().get_number();
+                        let c = c.eval(scope).unwrap().get_number();
+                        Expr::Value(Type::Number(a + c))
+                    })?
+                    .eval(scope)
+            })),
+        ),
+        (
             "max".to_string(),
             Type::Function(Function::BuiltIn(|args, scope| {
                 args.get(0)?
