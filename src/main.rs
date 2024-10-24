@@ -711,6 +711,10 @@ impl Statement {
                 } else if let Type::Object(mut object) = target {
                     object.insert(index.get_string(), Expr::Value(result.clone()));
                     scope.insert(name.to_string(), Type::Object(object));
+                } else if let Type::String(str) = target {
+                    let mut str: Vec<String> = str.chars().map(|c| c.to_string()).collect();
+                    str[index.get_number() as usize] = result.get_string();
+                    scope.insert(name.to_string(), Type::String(str.concat()));
                 }
             }
             Statement::Function(name, args, block) => {
@@ -884,6 +888,13 @@ impl Expr {
                         .eval(scope)?
                 } else if let Type::Object(obj) = target.eval(scope)? {
                     obj.get(&index.eval(scope)?.get_string())?.eval(scope)?
+                } else if let Type::String(str) = target.eval(scope)? {
+                    Type::String(
+                        str.chars()
+                            .collect::<Vec<char>>()
+                            .get(index.eval(scope)?.get_number() as usize)?
+                            .to_string(),
+                    )
                 } else {
                     target.eval(scope)?
                 }
