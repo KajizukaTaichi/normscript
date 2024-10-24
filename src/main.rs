@@ -13,6 +13,10 @@ struct Cli {
     /// Script file to be running
     #[arg(index = 1)]
     file: Option<String>,
+
+    /// Enable debug mode
+    #[arg(long, short)]
+    debug: bool,
 }
 
 fn main() {
@@ -21,7 +25,7 @@ fn main() {
 
     if let Some(path) = cli.file {
         if let Ok(code) = read_to_string(path) {
-            run_program(code, &mut scope);
+            run_program(code, &mut scope, cli.debug);
         } else {
             eprintln!("Error! opening file is fault");
         }
@@ -37,7 +41,7 @@ fn main() {
                 }
 
                 rl.add_history_entry(&code).unwrap_or_default();
-                if let Some(ast) = run_program(code, &mut scope) {
+                if let Some(ast) = run_program(code, &mut scope, cli.debug) {
                     println!("{}", ast.display(&mut scope));
                 }
             }
@@ -248,8 +252,11 @@ fn builtin_function() -> HashMap<String, Type> {
     ])
 }
 
-fn run_program(source: String, scope: &mut HashMap<String, Type>) -> Option<Type> {
+fn run_program(source: String, scope: &mut HashMap<String, Type>, debug: bool) -> Option<Type> {
     let program = parse_program(source, scope).unwrap_or_default();
+    if debug {
+        println!("{:#?}", &program);
+    }
     run_block(program, scope)
 }
 
