@@ -402,6 +402,14 @@ fn parse_expr(soruce: String, scope: &mut HashMap<String, Type>) -> Option<Expr>
             left
         };
         parse_expr(left, scope)?
+    } else if left.starts_with('{') && left.ends_with('}') {
+        let left = {
+            let mut left = left.clone();
+            left.remove(0);
+            left.remove(left.len() - 1);
+            left
+        };
+        Expr::Block(parse_program(left, scope)?)
     } else if left.starts_with("function(") && left.ends_with('}') {
         let left = {
             let mut left = left.clone();
@@ -833,6 +841,7 @@ enum Expr {
     Prefix(Box<Prefix>),
     Function(Function, Vec<Expr>),
     Access(Box<Expr>, Box<Expr>),
+    Block(Block),
     Value(Type),
 }
 
@@ -867,6 +876,7 @@ impl Expr {
                 }
                 run_block(code.clone(), &mut scope)?
             }
+            Expr::Block(block) => run_block(block.clone(), &mut scope.clone())?,
             Expr::Access(target, index) => {
                 if let Type::Array(array) = target.eval(scope)? {
                     array
