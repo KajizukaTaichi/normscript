@@ -269,6 +269,22 @@ fn parse_program(source: String, scope: &mut HashMap<String, Type>) -> Option<Bl
             let name = code["let".len()..code.find("=")?].trim().to_string();
             let expr = parse_program(code[code.find("=")? + 2..code.len()].to_string(), scope)?;
             program.push(Statement::Let(name, expr))
+        } else if code.starts_with("set") {
+            let define = code["set".len()..code.find("=")?].trim().to_string();
+            let (name, index) = define.split_once("[")?;
+            let expr = parse_program(code[code.find("=")? + 2..code.len()].to_string(), scope)?;
+            program.push(Statement::Set(
+                name.to_string(),
+                parse_expr(
+                    {
+                        let mut temp = index.trim().to_string();
+                        temp.remove(temp.find("]")?);
+                        temp
+                    },
+                    scope,
+                )?,
+                expr,
+            ))
         } else if code.starts_with("while") {
             let tokens = tokenize_expr(code["while".len()..].trim().to_string())?;
             let expr = parse_expr(tokens.get(0)?.to_string(), scope)?;
@@ -616,13 +632,14 @@ fn tokenize_args(input: String) -> Option<Vec<String>> {
 type Block = Vec<Statement>;
 #[derive(Debug, Clone)]
 enum Statement {
+    Expr(Expr),
     Print(Expr),
     Let(String, Block),
+    Set(String, Expr, Block),
     Function(String, Vec<String>, Block),
     If(Expr, Block, Option<Block>),
     While(Expr, Block),
     For(String, Expr, Block),
-    Expr(Expr),
 }
 
 impl Statement {
@@ -637,6 +654,19 @@ impl Statement {
             Statement::Let(name, expr) => {
                 result = run_block(expr.clone(), scope)?;
                 scope.insert(name.to_string(), result.clone());
+            }
+            Statement::Set(name, index, expr) => {
+                let index = index.eval(scope)?;
+                let target = scope.get(name.trim())?.clone();
+                result = run_block(expr.clone(), scope)?;
+
+                if let Type::Array(mut array) = target {
+                    array[index.get_number() as usize] = Expr::Value(result.clone());
+                    scope.insert(name.to_string(), Type::Array(array));
+                } else if let Type::Object(mut object) = target {
+                    object.insert(index.get_string(), Expr::Value(result.clone()));
+                    scope.insert(name.to_string(), Type::Object(object));
+                }
             }
             Statement::Function(name, args, block) => {
                 scope.insert(
