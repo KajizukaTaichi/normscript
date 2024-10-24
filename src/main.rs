@@ -706,14 +706,24 @@ impl Statement {
                 result = run_block(expr.clone(), scope)?;
 
                 if let Type::Array(mut array) = target {
-                    array[index.get_number() as usize] = Expr::Value(result.clone());
+                    let index = index.get_number() as usize;
+                    if index < array.len() {
+                        array[index] = Expr::Value(result.clone());
+                    } else {
+                        array.push(Expr::Value(result.clone()))
+                    }
                     scope.insert(name.to_string(), Type::Array(array));
                 } else if let Type::Object(mut object) = target {
                     object.insert(index.get_string(), Expr::Value(result.clone()));
                     scope.insert(name.to_string(), Type::Object(object));
                 } else if let Type::String(str) = target {
+                    let index = index.get_number() as usize;
                     let mut str: Vec<String> = str.chars().map(|c| c.to_string()).collect();
-                    str[index.get_number() as usize] = result.get_string();
+                    if index < str.len() {
+                        str[index] = result.get_string();
+                    } else {
+                        str.push(result.get_string());
+                    }
                     scope.insert(name.to_string(), Type::String(str.concat()));
                 }
             }
