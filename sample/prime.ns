@@ -1,17 +1,17 @@
 function prime (n) {
     let nums = range(0, n + 1, 1);
-    set nums[0] = false;
-    set nums[1] = false;
+    set nums[0] = null;
+    set nums[1] = null;
 
     for i in range(2, n ^ 0.5 + 1, 1) {
-        if (nums[i]) {
+        if !(nums[i] == null) {
             for j in range(i * i, n + 1, i) {
-                set nums[j] = false;
+                set nums[j] = null;
             }
         }
     };
 
-    filter(nums, function(n){ !(n == false) })
+    filter(nums, function(n){ !(n == null) })
 };
 
 print "Prime Apps" + new-line;
