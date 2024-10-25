@@ -502,7 +502,7 @@ fn parse_expr(soruce: String, scope: &mut HashMap<String, Type>) -> Option<Expr>
             },
             tokenize_args(args.to_string())?
                 .iter()
-                .map(|x| parse_expr(x.to_owned(), scope).unwrap())
+                .map(|x| parse_expr(x.to_owned(), scope).unwrap_or(Expr::Value(Type::Null)))
                 .collect::<Vec<Expr>>(),
         )
     } else if left.contains('[') && left.ends_with(']') {
