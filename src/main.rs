@@ -261,11 +261,11 @@ fn run_program(source: String, scope: &mut HashMap<String, Type>, debug: bool) -
 }
 
 fn run_block(block: Block, scope: &mut HashMap<String, Type>) -> Option<Type> {
-    let mut result = Some(Type::Null);
+    let mut result = Type::Null;
     for mut line in block {
-        result = line.run(scope);
+        result = line.run(scope)?;
     }
-    result
+    Some(result)
 }
 
 fn parse_program(source: String, scope: &mut HashMap<String, Type>) -> Option<Block> {
