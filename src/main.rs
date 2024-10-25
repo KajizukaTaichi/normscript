@@ -332,6 +332,9 @@ fn parse_program(source: String, scope: &mut HashMap<String, Type>) -> Option<Bl
             let name = code["let".len()..code.find("=")?].trim().to_string();
             let expr = parse_program(code[code.find("=")? + 2..code.len()].to_string(), scope)?;
             program.push(Statement::Let(name, expr))
+        } else if code.starts_with("del") {
+            let name = code["let".len()..].trim().to_string();
+            program.push(Statement::Del(name))
         } else if code.starts_with("set") {
             let define = code["set".len()..code.find("=")?].trim().to_string();
             let (name, index) = define.split_once("[")?;
@@ -711,6 +714,7 @@ enum Statement {
     Expr(Expr),
     Print(Expr),
     Let(String, Block),
+    Del(String),
     Set(String, Expr, Block),
     Function(String, Vec<String>, Block),
     If(Expr, Block, Option<Block>),
@@ -732,6 +736,9 @@ impl Statement {
             Statement::Let(name, expr) => {
                 result = run_block(expr.clone(), scope)?;
                 scope.insert(name.to_string(), result.clone());
+            }
+            Statement::Del(name) => {
+                scope.remove(name);
             }
             Statement::Set(name, index, expr) => {
                 let index = index.eval(scope)?;
