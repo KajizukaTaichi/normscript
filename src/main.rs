@@ -305,6 +305,26 @@ fn parse_program(source: String, scope: &mut HashMap<String, Type>) -> Option<Bl
                     None,
                 ))
             }
+        } else if code.starts_with("try") {
+            let tokens = tokenize_expr(code["try".len()..].trim().to_string())?;
+            if tokens.get(1)?.trim() == "catch" {
+                program.push(Statement::Try(
+                    parse_program(
+                        {
+                            let token = tokens.get(0)?.to_owned();
+                            token[token.find("{")? + 1..token.rfind("}")?].to_string()
+                        },
+                        scope,
+                    )?,
+                    parse_program(
+                        {
+                            let token = tokens.get(2)?.to_owned();
+                            token[token.find("{")? + 1..token.rfind("}")?].to_string()
+                        },
+                        scope,
+                    )?,
+                ))
+            }
         } else if code.starts_with("print") {
             let expr = parse_expr(code["print".len()..code.len()].to_string(), scope)?;
             program.push(Statement::Print(expr))
@@ -694,8 +714,9 @@ enum Statement {
     Set(String, Expr, Block),
     Function(String, Vec<String>, Block),
     If(Expr, Block, Option<Block>),
-    While(Expr, Block),
     For(String, Expr, Block),
+    While(Expr, Block),
+    Try(Block, Block),
 }
 
 impl Statement {
@@ -764,6 +785,13 @@ impl Statement {
                     result = i.eval(scope)?;
                     scope.insert(counter.clone(), result.clone());
                     result = run_block(code.to_vec(), scope)?;
+                }
+            }
+            Statement::Try(code, catch) => {
+                if let Some(re) = run_block(code.to_vec(), scope) {
+                    result = re
+                } else {
+                    result = run_block(catch.to_vec(), scope)?;
                 }
             }
         }
