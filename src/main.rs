@@ -905,7 +905,6 @@ enum Expr {
     Access(Box<Expr>, Box<Expr>),
     Block(Block),
     Value(Type),
-    Method(Box<Expr>, String, Vec<Expr>),
 }
 
 #[derive(Clone, Debug)]
