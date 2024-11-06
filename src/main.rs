@@ -63,7 +63,7 @@ fn builtin_function() -> HashMap<String, Type> {
                         Type::Array(_) => "array",
                         Type::Symbol(_) => "symbol",
                         Type::Function(_) => "function",
-                        Type::Dict(_) => "dict",
+                        Type::Object(_) => "object",
                     }
                     .to_string(),
                 ))
@@ -461,7 +461,7 @@ fn parse_expr(soruce: String, scope: &mut HashMap<String, Type>) -> Option<Expr>
             args,
             parse_program(splited.1.to_string(), scope)?,
         )))
-    } else if left.starts_with("dict{") && left.ends_with('}') {
+    } else if left.starts_with("object{") && left.ends_with('}') {
         let left = {
             let mut left = left.clone();
             left = left.replacen("object{", "", 1);
@@ -479,7 +479,7 @@ fn parse_expr(soruce: String, scope: &mut HashMap<String, Type>) -> Option<Expr>
             );
         }
 
-        Expr::Value(Type::Dict(object))
+        Expr::Value(Type::Object(object))
     } else if left.starts_with('[') && left.ends_with(']') {
         let left = {
             let mut left = left.clone();
@@ -753,9 +753,9 @@ impl Statement {
                         array.push(Expr::Value(result.clone()))
                     }
                     scope.insert(name.to_string(), Type::Array(array));
-                } else if let Type::Dict(mut object) = target {
+                } else if let Type::Object(mut object) = target {
                     object.insert(index.get_string(), Expr::Value(result.clone()));
-                    scope.insert(name.to_string(), Type::Dict(object));
+                    scope.insert(name.to_string(), Type::Object(object));
                 } else if let Type::String(str) = target {
                     let index = index.get_number() as usize;
                     let mut str: Vec<String> = str.chars().map(|c| c.to_string()).collect();
@@ -814,7 +814,7 @@ enum Type {
     Array(Vec<Expr>),
     Function(Function),
     Symbol(String),
-    Dict(HashMap<String, Expr>),
+    Object(HashMap<String, Expr>),
     Null,
 }
 
@@ -886,8 +886,8 @@ impl Type {
                 format!("function({})", args.join(", "))
             }
             Type::Function(Function::Future(name)) => format!("function({name})"),
-            Type::Dict(obj) => format!(
-                "dict{{ {} }}",
+            Type::Object(obj) => format!(
+                "object{{ {} }}",
                 obj.iter()
                     .map(|(k, v)| { format!("{k}: {}", v.eval(scope).unwrap().display(scope)) })
                     .collect::<Vec<String>>()
@@ -905,6 +905,7 @@ enum Expr {
     Access(Box<Expr>, Box<Expr>),
     Block(Block),
     Value(Type),
+    Method(Box<Expr>, String, Vec<Expr>),
 }
 
 #[derive(Clone, Debug)]
@@ -948,7 +949,7 @@ impl Expr {
                     array
                         .get(index.eval(scope)?.get_number() as usize)?
                         .eval(scope)?
-                } else if let Type::Dict(obj) = target.eval(scope)? {
+                } else if let Type::Object(obj) = target.eval(scope)? {
                     obj.get(&index.eval(scope)?.get_string())?.eval(scope)?
                 } else if let Type::String(str) = target.eval(scope)? {
                     Type::String(
