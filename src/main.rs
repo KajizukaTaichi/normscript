@@ -7,8 +7,10 @@ use std::{
     process::exit,
 };
 
+const VERSION: &str = "0.1.0";
+
 #[derive(Parser, Debug)]
-#[command(name = "NormScript", version = "0.1.0")]
+#[command(name = "NormScript", version = VERSION)]
 struct Cli {
     /// Script file to be running
     #[arg(index = 1)]
@@ -30,7 +32,7 @@ fn main() {
             eprintln!("Error! opening file is fault");
         }
     } else {
-        println!("NormScript");
+        println!("NormScript {VERSION}");
         let mut rl = DefaultEditor::new().unwrap();
 
         loop {
