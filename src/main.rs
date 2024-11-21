@@ -404,7 +404,19 @@ fn parse_program(source: String, scope: &mut HashMap<String, Type>) -> Option<Bl
                     code[code.find("{")? + 1..code.rfind("}")?].to_string(),
                     scope,
                 )?;
-                program.push(Statement::For(counter, iter, code))
+                program.push(Statement::For(counter, iter, code, false))
+            } else if tokens.get(1)? == "of" {
+                let counter = tokens.get(0)?.trim().to_string();
+
+                let code = tokens.get(2)?;
+                let iter = parse_expr(code.to_string(), scope)?;
+
+                let code = tokens.get(3)?;
+                let code = parse_program(
+                    code[code.find("{")? + 1..code.rfind("}")?].to_string(),
+                    scope,
+                )?;
+                program.push(Statement::For(counter, iter, code, true))
             }
         } else if code.starts_with("//") || code.is_empty() {
             continue;
@@ -732,7 +744,7 @@ enum Statement {
     Set(String, Expr, Block),
     Function(String, Vec<String>, Block),
     If(Expr, Block, Option<Block>),
-    For(String, Expr, Block),
+    For(String, Expr, Block, bool),
     While(Expr, Block),
     Try(Block, Block),
 }
@@ -824,12 +836,23 @@ impl Statement {
                     result = run_block(code.to_vec(), scope)?;
                 }
             }
-            Statement::For(counter, iterator, code) => {
-                for i in iterator.eval(scope)?.get_array() {
-                    result = i.eval(scope)?;
-                    scope.insert(counter.clone(), result.clone());
-                    result = run_block(code.to_vec(), scope)?;
+            Statement::For(counter, iterator, code, is_object) => {
+                if *is_object {
+                    for i in iterator.eval(scope)?.get_object() {
+                        scope.insert(
+                            counter.clone(),
+                            Type::Array(vec![Expr::Value(Type::String(i.0)), i.1]),
+                        );
+                        result = run_block(code.to_vec(), scope)?;
+                    }
+                } else {
+                    for i in iterator.eval(scope)?.get_array() {
+                        result = i.eval(scope)?;
+                        scope.insert(counter.clone(), result.clone());
+                        result = run_block(code.to_vec(), scope)?;
+                    }
                 }
+                scope.remove(counter);
             }
             Statement::Try(code, catch) => {
                 if let Some(re) = run_block(code.to_vec(), scope) {
@@ -888,6 +911,7 @@ impl Type {
             _ => String::new(),
         }
     }
+
     fn get_array(&self) -> Vec<Expr> {
         match self {
             Type::Array(s) => s.to_owned(),
@@ -898,12 +922,21 @@ impl Type {
             other => vec![Expr::Value(other.to_owned())],
         }
     }
+
     fn get_function(&self) -> Function {
         match self {
             Type::Function(func) => func.clone(),
             _ => Function::UserDefined(vec![], vec![]),
         }
     }
+
+    fn get_object(&self) -> HashMap<String, Expr> {
+        match self {
+            Type::Object(obj) => obj.clone(),
+            _ => HashMap::new(),
+        }
+    }
+
     fn display(&self, scope: &mut HashMap<String, Type>) -> String {
         match self {
             Type::String(s) => format!("\"{}\"", s),
