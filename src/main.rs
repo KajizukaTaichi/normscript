@@ -334,7 +334,21 @@ fn parse_program(source: String, scope: &mut HashMap<String, Type>) -> Option<Bl
             program.push(Statement::Let(name, expr))
         } else if code.starts_with("del") {
             let name = code["let".len()..].trim().to_string();
-            program.push(Statement::Del(name))
+            if let Some((name, index)) = name.split_once("[") {
+                program.push(Statement::Del(
+                    name.to_string(),
+                    Some(parse_expr(
+                        {
+                            let mut temp = index.trim().to_string();
+                            temp.remove(temp.find("]")?);
+                            temp
+                        },
+                        scope,
+                    )?),
+                ))
+            } else {
+                program.push(Statement::Del(name, None))
+            }
         } else if code.starts_with("set") {
             let define = code["set".len()..code.find("=")?].trim().to_string();
             let (name, index) = define.split_once("[")?;
@@ -714,7 +728,7 @@ enum Statement {
     Expr(Expr),
     Print(Expr),
     Let(String, Block),
-    Del(String),
+    Del(String, Option<Expr>),
     Set(String, Expr, Block),
     Function(String, Vec<String>, Block),
     If(Expr, Block, Option<Block>),
@@ -737,8 +751,31 @@ impl Statement {
                 result = run_block(expr.clone(), scope)?;
                 scope.insert(name.to_string(), result.clone());
             }
-            Statement::Del(name) => {
-                scope.remove(name);
+            Statement::Del(name, index) => {
+                if let Some(index) = index {
+                    let index = index.eval(scope)?;
+                    let target = scope.get(name.trim())?.clone();
+
+                    if let Type::Array(mut array) = target {
+                        let index = index.get_number() as usize;
+                        if index < array.len() {
+                            array.remove(index);
+                        }
+                        scope.insert(name.to_string(), Type::Array(array));
+                    } else if let Type::Object(mut object) = target {
+                        object.remove(&index.get_string());
+                        scope.insert(name.to_string(), Type::Object(object));
+                    } else if let Type::String(str) = target {
+                        let index = index.get_number() as usize;
+                        let mut str: Vec<String> = str.chars().map(|c| c.to_string()).collect();
+                        if index < str.len() {
+                            str.remove(index);
+                        }
+                        scope.insert(name.to_string(), Type::String(str.concat()));
+                    }
+                } else {
+                    scope.remove(name);
+                }
             }
             Statement::Set(name, index, expr) => {
                 let index = index.eval(scope)?;
