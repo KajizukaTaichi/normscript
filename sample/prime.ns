@@ -15,5 +15,11 @@ function prime (n) {
 };
 
 print "Prime Apps" + new-line;
-let n = cast(input("> "), "number");
-print join(prime(n), " ") + new-line;
+while true {
+    let n = cast(input("> "), "number");
+    if (n > 0) {
+        print join(prime(n), " ") + new-line;
+    } else {
+        exit();
+    }
+}
